@@ -1,81 +1,201 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>ระบบตรวจสอบเปอร์เซ็นต์เข้าประชุม</title>
-  <!-- นำเข้า Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Attendance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- เพิ่ม CDN Chart.js -->
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f9;
+      text-align: center;
+      padding: 15px;
+    }
+
+    .container {
+      background: #fff;
+      max-width: 950px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 5px;
+      display: inline-block;
+      margin: 10px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    canvas {
+      max-width: 100%;
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .pagination {
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      transition: 0.3s;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background: #0056b3;
+    }
+  </style>
 </head>
 <body>
 
-<h2>Dashboard % การเข้าประชุม</h2>
-<canvas id="attendanceChart" width="600" height="300"></canvas>
+<div class="container">
+  <h2>📊 Dashboard % การเข้าประชุม</h2>
+  <div class="info-box">
+    🏫 <strong>ประชุมทั้งหมด:</strong> <span id="totalMeetings"></span> ครั้ง
+  </div>
+
+  <canvas id="attendanceChart"></canvas>
+
+  <div class="pagination">
+    <button id="prevPage" onclick="changePage(-1)" disabled>⬅️ ก่อนหน้า</button>
+    <span id="currentPage">หน้า 1</span>
+    <button id="nextPage" onclick="changePage(1)">ถัดไป ➡️</button>
+  </div>
+</div>
 
 <script>
-// URL Firebase ของคุณ (เปลี่ยนให้ตรงกับของคุณ)
-const firebaseUrl = "https://meeting-attendance-project-default-rtdb.asia-southeast1.firebasedatabase.app/attendance.json";
+  const firebaseUrl = "https://meeting-attendance-project-default-rtdb.asia-southeast1.firebasedatabase.app/attendance.json";
+  const sheetAPI = "https://script.google.com/macros/s/AKfycbwxD4rAfWVZCDNnZ3LhRwtLaQrnB4iq4OoqdlZIuHXtmcKhfrqR-92e_Ao0ajr4aRm6UA/exec"; // 🔹 แก้เป็น Web App URL ของ Google Apps Script
 
+  const requiredMeetings = 5; // ✅ กำหนดจำนวนครั้งที่ต้องเข้าประชุมเพื่อให้ได้ 100%
+  const itemsPerPage = 10; // ✅ จำนวนคนต่อหน้า
+  let currentPage = 1;
+  let allLabels = [];
+  let allPercentages = [];
+  let attendanceCounts = [];
 
-// ดึงข้อมูลจาก Firebase
-fetch(firebaseUrl)
-  .then(response => response.json())
-  .then(data => {
-    console.log(data);
-    calculateAttendancePercentage(data);
-  });
+  // 🔹 ดึงข้อมูลจาก Google Sheets และ Firebase พร้อมกัน
+  Promise.all([
+    fetch(sheetAPI).then(response => response.json()), // ดึงรายชื่อทั้งหมดจาก Google Sheets
+    fetch(firebaseUrl).then(response => response.json()) // ดึงข้อมูลจาก Firebase
+  ])
+  .then(([allStudents, attendanceData]) => {
+    document.getElementById("totalMeetings").innerText = requiredMeetings;
+    processData(attendanceData, allStudents);
+  })
+  .catch(error => console.error("❌ เกิดข้อผิดพลาดในการดึงข้อมูล:", error));
 
-// ฟังก์ชันคำนวณ %
-function calculateAttendancePercentage(data) {
-  let attendanceCount = {};
+  function processData(attendanceData, allStudents) {
+    let attendanceCount = {};
 
-  Object.values(data).forEach(record => {
-    let studentId = record.studentId;
-    let status = record.status; // ข้อมูลจาก Sheets
+    // ✅ ตรวจสอบคนที่กรอกฟอร์ม (ถือว่า "เข้าประชุม")
+    Object.values(attendanceData).forEach(record => {
+        let studentId = record.studentId;
+        if (!attendanceCount[studentId]) {
+            attendanceCount[studentId] = { attended: 0, total: requiredMeetings };
+        }
+        attendanceCount[studentId].attended++; // ✅ นับจำนวนครั้งที่เข้าจริง
+    });
 
-    if (!attendanceCount[studentId]) {
-      attendanceCount[studentId] = { attended: 0, total: 0 };
-    }
+    // ✅ ตรวจสอบคนที่ไม่มีชื่อในฟอร์มเลย (ถือว่า "ขาดประชุมทั้งหมด")
+    Object.keys(allStudents).forEach(studentId => {
+        if (!attendanceCount[studentId]) {
+            attendanceCount[studentId] = { attended: 0, total: requiredMeetings };
+        }
+    });
 
-    attendanceCount[studentId].total++;
+    // ✅ แสดงผลเปอร์เซ็นต์ตามจำนวนครั้งที่เข้าจริง
+    allLabels = [];
+    allPercentages = [];
+    attendanceCounts = [];
 
-    if (status === "เข้าประชุม") {
-      attendanceCount[studentId].attended++;
-    }
-  });
+    Object.keys(attendanceCount).forEach(studentId => {
+        allLabels.push(`${studentId} (${allStudents[studentId]})`);
+        const percent = (attendanceCount[studentId].attended / requiredMeetings) * 100;
+        allPercentages.push(percent.toFixed(2));
+        attendanceCounts.push(attendanceCount[studentId].attended); // จำนวนครั้งที่เข้าจริง
+    });
 
-  // สร้างข้อมูลสำหรับกราฟ
-  let studentIds = [];
-  let percentages = [];
-
-  for (let studentId in attendanceCount) {
-    let percent = (attendanceCount[studentId].attended / attendanceCount[studentId].total) * 100;
-    studentIds.push(studentId);
-    percentages.push(percent.toFixed(2));
+    updateChart();
   }
 
-  renderChart(studentIds, percentages);
-};
+  function updateChart() {
+    let startIndex = (currentPage - 1) * itemsPerPage;
+    let endIndex = startIndex + itemsPerPage;
 
-// แสดงกราฟด้วย Chart.js
-function renderChart(studentIds, percentages) {
-  const ctx = document.getElementById('attendanceChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: studentIds,
-      datasets: [{
-        label: '% การเข้าร่วมประชุม',
-        data: percentages,
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
-      }
+    let pageLabels = allLabels.slice(startIndex, endIndex);
+    let pagePercentages = allPercentages.slice(startIndex, endIndex);
+    let pageAttendanceCounts = attendanceCounts.slice(startIndex, endIndex);
+
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+    if (window.attendanceChart instanceof Chart) {
+      window.attendanceChart.destroy();
     }
-  });
-}
+
+    window.attendanceChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: pageLabels,
+        datasets: [{
+          label: 'เปอร์เซ็นต์การเข้าร่วมประชุม (%)',
+          data: pagePercentages,
+          backgroundColor: 'rgba(75, 192, 192, 0.6)'
+        }, {
+          label: 'จำนวนครั้งที่เข้าประชุม',
+          data: pageAttendanceCounts,
+          backgroundColor: 'rgba(255, 99, 132, 0.6)'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100
+          }
+        }
+      }
+    });
+
+    updatePagination();
+  }
+
+  function updatePagination() {
+    let totalPages = Math.ceil(allLabels.length / itemsPerPage);
+    document.getElementById("currentPage").innerText = `หน้า ${currentPage}`;
+    
+    document.getElementById("prevPage").disabled = currentPage === 1;
+    document.getElementById("nextPage").disabled = currentPage === totalPages;
+  }
+
+  function changePage(step) {
+    currentPage += step;
+    updateChart();
+  }
 </script>
 
 </body>
