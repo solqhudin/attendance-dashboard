@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Attendance Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- เพิ่ม CDN Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
   <style>
     body {
       font-family: 'Arial', sans-serif;
       background-color: #f4f4f9;
       text-align: center;
-      padding: 15px;
+      padding: 20px;
     }
 
     .container {
       background: #fff;
-      max-width: 950px;
+      max-width: 850px;
       margin: auto;
       padding: 20px;
       border-radius: 10px;
@@ -33,6 +33,15 @@
       margin: 10px 0;
       font-size: 18px;
       font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 60%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
     }
 
     canvas {
@@ -73,9 +82,12 @@
 
 <div class="container">
   <h2>📊 Dashboard % การเข้าประชุม</h2>
+  
   <div class="info-box">
     🏫 <strong>ประชุมทั้งหมด:</strong> <span id="totalMeetings"></span> ครั้ง
   </div>
+  <br>
+  <input type="text" id="searchBox" placeholder="ค้นหารหัสนักศึกษาหรือชื่อ..." onkeyup="filterData()">
 
   <canvas id="attendanceChart"></canvas>
 
@@ -90,17 +102,19 @@
   const firebaseUrl = "https://meeting-attendance-project-default-rtdb.asia-southeast1.firebasedatabase.app/attendance.json";
   const sheetAPI = "https://script.google.com/macros/s/AKfycbwxD4rAfWVZCDNnZ3LhRwtLaQrnB4iq4OoqdlZIuHXtmcKhfrqR-92e_Ao0ajr4aRm6UA/exec"; // 🔹 แก้เป็น Web App URL ของ Google Apps Script
 
-  const requiredMeetings = 5; // ✅ กำหนดจำนวนครั้งที่ต้องเข้าประชุมเพื่อให้ได้ 100%
-  const itemsPerPage = 10; // ✅ จำนวนคนต่อหน้า
+  const requiredMeetings = 5; 
+  const itemsPerPage = 10; 
   let currentPage = 1;
   let allLabels = [];
   let allPercentages = [];
   let attendanceCounts = [];
+  let filteredLabels = [];
+  let filteredPercentages = [];
+  let filteredAttendanceCounts = [];
 
-  // 🔹 ดึงข้อมูลจาก Google Sheets และ Firebase พร้อมกัน
   Promise.all([
-    fetch(sheetAPI).then(response => response.json()), // ดึงรายชื่อทั้งหมดจาก Google Sheets
-    fetch(firebaseUrl).then(response => response.json()) // ดึงข้อมูลจาก Firebase
+    fetch(sheetAPI).then(response => response.json()), 
+    fetch(firebaseUrl).then(response => response.json()) 
   ])
   .then(([allStudents, attendanceData]) => {
     document.getElementById("totalMeetings").innerText = requiredMeetings;
@@ -111,23 +125,20 @@
   function processData(attendanceData, allStudents) {
     let attendanceCount = {};
 
-    // ✅ ตรวจสอบคนที่กรอกฟอร์ม (ถือว่า "เข้าประชุม")
     Object.values(attendanceData).forEach(record => {
         let studentId = record.studentId;
         if (!attendanceCount[studentId]) {
             attendanceCount[studentId] = { attended: 0, total: requiredMeetings };
         }
-        attendanceCount[studentId].attended++; // ✅ นับจำนวนครั้งที่เข้าจริง
+        attendanceCount[studentId].attended++;
     });
 
-    // ✅ ตรวจสอบคนที่ไม่มีชื่อในฟอร์มเลย (ถือว่า "ขาดประชุมทั้งหมด")
     Object.keys(allStudents).forEach(studentId => {
         if (!attendanceCount[studentId]) {
             attendanceCount[studentId] = { attended: 0, total: requiredMeetings };
         }
     });
 
-    // ✅ แสดงผลเปอร์เซ็นต์ตามจำนวนครั้งที่เข้าจริง
     allLabels = [];
     allPercentages = [];
     attendanceCounts = [];
@@ -136,8 +147,12 @@
         allLabels.push(`${studentId} (${allStudents[studentId]})`);
         const percent = (attendanceCount[studentId].attended / requiredMeetings) * 100;
         allPercentages.push(percent.toFixed(2));
-        attendanceCounts.push(attendanceCount[studentId].attended); // จำนวนครั้งที่เข้าจริง
+        attendanceCounts.push(attendanceCount[studentId].attended);
     });
+
+    filteredLabels = [...allLabels];
+    filteredPercentages = [...allPercentages];
+    filteredAttendanceCounts = [...attendanceCounts];
 
     updateChart();
   }
@@ -146,9 +161,9 @@
     let startIndex = (currentPage - 1) * itemsPerPage;
     let endIndex = startIndex + itemsPerPage;
 
-    let pageLabels = allLabels.slice(startIndex, endIndex);
-    let pagePercentages = allPercentages.slice(startIndex, endIndex);
-    let pageAttendanceCounts = attendanceCounts.slice(startIndex, endIndex);
+    let pageLabels = filteredLabels.slice(startIndex, endIndex);
+    let pagePercentages = filteredPercentages.slice(startIndex, endIndex);
+    let pageAttendanceCounts = filteredAttendanceCounts.slice(startIndex, endIndex);
 
     const ctx = document.getElementById('attendanceChart').getContext('2d');
 
@@ -184,8 +199,19 @@
     updatePagination();
   }
 
+  function filterData() {
+    let searchValue = document.getElementById("searchBox").value.toLowerCase();
+    filteredLabels = allLabels.filter(label => label.toLowerCase().includes(searchValue));
+    let indexes = allLabels.map((label, index) => label.toLowerCase().includes(searchValue) ? index : -1).filter(index => index !== -1);
+    filteredPercentages = indexes.map(index => allPercentages[index]);
+    filteredAttendanceCounts = indexes.map(index => attendanceCounts[index]);
+
+    currentPage = 1;
+    updateChart();
+  }
+
   function updatePagination() {
-    let totalPages = Math.ceil(allLabels.length / itemsPerPage);
+    let totalPages = Math.ceil(filteredLabels.length / itemsPerPage);
     document.getElementById("currentPage").innerText = `หน้า ${currentPage}`;
     
     document.getElementById("prevPage").disabled = currentPage === 1;
