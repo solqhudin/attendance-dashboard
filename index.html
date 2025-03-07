@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ระบบตรวจสอบเปอร์เซ็นต์เข้าประชุม</title>
+  <!-- นำเข้า Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h2>Dashboard % การเข้าประชุม</h2>
+<canvas id="attendanceChart" width="600" height="300"></canvas>
+
+<script>
+// URL Firebase ของคุณ (เปลี่ยนให้ตรงกับของคุณ)
+const firebaseUrl = "https://meeting-attendance-project-default-rtdb.asia-southeast1.firebasedatabase.app/attendance.json";
+
+
+// ดึงข้อมูลจาก Firebase
+fetch(firebaseUrl)
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    calculateAttendancePercentage(data);
+  });
+
+// ฟังก์ชันคำนวณ %
+function calculateAttendancePercentage(data) {
+  let attendanceCount = {};
+
+  Object.values(data).forEach(record => {
+    let studentId = record.studentId;
+    let status = record.status; // ข้อมูลจาก Sheets
+
+    if (!attendanceCount[studentId]) {
+      attendanceCount[studentId] = { attended: 0, total: 0 };
+    }
+
+    attendanceCount[studentId].total++;
+
+    if (status === "เข้าประชุม") {
+      attendanceCount[studentId].attended++;
+    }
+  });
+
+  // สร้างข้อมูลสำหรับกราฟ
+  let studentIds = [];
+  let percentages = [];
+
+  for (let studentId in attendanceCount) {
+    let percent = (attendanceCount[studentId].attended / attendanceCount[studentId].total) * 100;
+    studentIds.push(studentId);
+    percentages.push(percent.toFixed(2));
+  }
+
+  renderChart(studentIds, percentages);
+};
+
+// แสดงกราฟด้วย Chart.js
+function renderChart(studentIds, percentages) {
+  const ctx = document.getElementById('attendanceChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: studentIds,
+      datasets: [{
+        label: '% การเข้าร่วมประชุม',
+        data: percentages,
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+</script>
+
+</body>
+</html>
