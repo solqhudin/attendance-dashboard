@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>  
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -35,13 +35,34 @@
       font-weight: bold;
     }
 
+    .search-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
     input[type="text"] {
       width: 60%;
       padding: 10px;
-      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 5px;
       font-size: 16px;
+    }
+
+    button.search-reset {
+      margin-left: 10px;
+      padding: 10px 15px;
+      background: #ff5c5c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button.search-reset:hover {
+      background: #cc0000;
     }
 
     canvas {
@@ -84,10 +105,13 @@
   <h2>📊 Dashboard % การเข้าประชุม</h2>
   
   <div class="info-box">
-    🏫 <strong>ประชุมทั้งหมด:</strong> <span id="totalMeetings"></span> ครั้ง
+    <strong>ประชุมทั้งหมด:</strong> <span id="totalMeetings"></span> ครั้ง
   </div>
-  <br>
-  <input type="text" id="searchBox" placeholder="ค้นหารหัสนักศึกษาหรือชื่อ..." onkeyup="filterData()">
+  
+  <div class="search-container">
+    <input type="text" id="searchBox" placeholder="ค้นหารหัสนักศึกษาหรือชื่อ..." onkeyup="filterData()">
+    <button class="search-reset" onclick="resetFilter()">รีเซ็ต</button>
+  </div>
 
   <canvas id="attendanceChart"></canvas>
 
@@ -100,7 +124,7 @@
 
 <script>
   const firebaseUrl = "https://meeting-attendance-project-default-rtdb.asia-southeast1.firebasedatabase.app/attendance.json";
-  const sheetAPI = "https://script.google.com/macros/s/AKfycbwxD4rAfWVZCDNnZ3LhRwtLaQrnB4iq4OoqdlZIuHXtmcKhfrqR-92e_Ao0ajr4aRm6UA/exec"; // 🔹 แก้เป็น Web App URL ของ Google Apps Script
+  const sheetAPI = "https://script.google.com/macros/s/AKfycbwxD4rAfWVZCDNnZ3LhRwtLaQrnB4iq4OoqdlZIuHXtmcKhfrqR-92e_Ao0ajr4aRm6UA/exec"; 
 
   const requiredMeetings = 5; 
   const itemsPerPage = 10; 
@@ -221,6 +245,11 @@
   function changePage(step) {
     currentPage += step;
     updateChart();
+  }
+
+  function resetFilter() {
+    document.getElementById("searchBox").value = "";
+    filterData();
   }
 </script>
 
