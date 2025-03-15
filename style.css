@@ -1,0 +1,166 @@
+/* ตั้งค่าพื้นฐาน */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    text-align: center;
+    padding: 20px;
+  }
+
+  /* Navbar */
+  .navbar {
+    background: #007bff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .navbar a {
+    font-family: 'Arial', sans-serif;
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+    /* สไตล์ Dropdown */
+.dropdown-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.custom-dropdown {
+  width: 50%;
+  max-width: 400px;
+  padding: 10px;
+  font-size: 16px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: 0.3s;
+}
+
+.custom-dropdown:hover {
+  background-color: #e9ecef;
+}
+
+.custom-dropdown:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+
+  /* Container */
+  .container {
+    background: #fff;
+    max-width: 1200px;
+    margin: auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  h2 {
+    font-size: 26px;
+    color: #333;
+    margin-bottom: 15px;
+  }
+
+  .info-box {
+    background: #e3f2fd;
+    padding: 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin: 15px 0;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  /* Input & ปุ่ม */
+  .search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  input[type="text"] {
+    width: 50%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+
+  button {
+    padding: 12px 18px;
+    margin-left: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+  }
+
+  button:hover {
+    background: #ff5c5c;
+  }
+
+  /* กราฟ */
+  .chart-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: auto;
+  }
+
+  canvas {
+    max-width: 100%;
+    width: 100%;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Footer */
+  footer {
+    font-family: 'Arial', sans-serif;
+    background-color: #ffffff;
+    padding: 20px 0;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 16px;
+    color: #333;
+    border-radius: 10px;
+  }
+
+  .footer-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .footer-container a {
+    text-decoration: none;
+    color: #000000;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+  }
+
+  .footer-container a img {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+  }
+   
