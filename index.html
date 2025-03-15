@@ -1,257 +1,71 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>    
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>Attendance Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f9;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .container {
-      background: #fff;
-      max-width: 850px;
-      margin: auto;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-      color: #333;
-    }
-
-    .info-box {
-      background: #e3f2fd;
-      padding: 10px;
-      border-radius: 5px;
-      display: inline-block;
-      margin: 10px 0;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .search-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    input[type="text"] {
-      width: 60%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-
-    button.search-reset {
-      margin-left: 10px;
-      padding: 10px 15px;
-      background: #ff5c5c;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    button.search-reset:hover {
-      background: #cc0000;
-    }
-
-    canvas {
-      max-width: 100%;
-      background: white;
-      border-radius: 10px;
-      padding: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .pagination {
-      margin-top: 20px;
-    }
-
-    button {
-      padding: 10px 15px;
-      margin: 5px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background: #007bff;
-      color: white;
-      transition: 0.3s;
-    }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    button:hover:not(:disabled) {
-      background: #0056b3;
-    }
-  </style>
+  <title>Dashboard ชมรมมรย. จิตอาสา</title>
+  <link rel="icon" href="./images/favicon.png.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet"  href="style.css">
 </head>
+
 <body>
-
-<div class="container">
-  <h2>📊 Dashboard % การเข้าประชุม</h2>
-  
-  <div class="info-box">
-    <strong>ประชุมทั้งหมด:</strong> <span id="totalMeetings"></span> ครั้ง
+  <!--  Navbar -->
+  <div class="navbar">
+    <div>
+      <span style="color: white; font-size: 18px;">ระบบบันทึกการทำงานของคณะกรรมการและอนุกรรมการ ชมรม มรย. จิตอาสา</span>
+    </div>
   </div>
-  
-  <div class="search-container">
-    <input type="text" id="searchBox" placeholder="ค้นหารหัสนักศึกษาหรือชื่อ..." onkeyup="filterData()">
-    <button class="search-reset" onclick="resetFilter()">รีเซ็ต</button>
-  </div>
-
-  <canvas id="attendanceChart"></canvas>
-
-  <div class="pagination">
-    <button id="prevPage" onclick="changePage(-1)" disabled>⬅️ ก่อนหน้า</button>
-    <span id="currentPage">หน้า 1</span>
-    <button id="nextPage" onclick="changePage(1)">ถัดไป ➡️</button>
-  </div>
-</div>
-
-<script>
-  const firebaseUrl = "https://meeting-attendance-project-default-rtdb.asia-southeast1.firebasedatabase.app/attendance.json";
-  const sheetAPI = "https://script.google.com/macros/s/AKfycbwxD4rAfWVZCDNnZ3LhRwtLaQrnB4iq4OoqdlZIuHXtmcKhfrqR-92e_Ao0ajr4aRm6UA/exec"; 
-
-  const requiredMeetings = 5; 
-  const itemsPerPage = 10; 
-  let currentPage = 1;
-  let allLabels = [];
-  let allPercentages = [];
-  let attendanceCounts = [];
-  let filteredLabels = [];
-  let filteredPercentages = [];
-  let filteredAttendanceCounts = [];
-
-  Promise.all([
-    fetch(sheetAPI).then(response => response.json()), 
-    fetch(firebaseUrl).then(response => response.json()) 
-  ])
-  .then(([allStudents, attendanceData]) => {
-    document.getElementById("totalMeetings").innerText = requiredMeetings;
-    processData(attendanceData, allStudents);
-  })
-  .catch(error => console.error("❌ เกิดข้อผิดพลาดในการดึงข้อมูล:", error));
-
-  function processData(attendanceData, allStudents) {
-    let attendanceCount = {};
-
-    Object.values(attendanceData).forEach(record => {
-        let studentId = record.studentId;
-        if (!attendanceCount[studentId]) {
-            attendanceCount[studentId] = { attended: 0, total: requiredMeetings };
-        }
-        attendanceCount[studentId].attended++;
-    });
-
-    Object.keys(allStudents).forEach(studentId => {
-        if (!attendanceCount[studentId]) {
-            attendanceCount[studentId] = { attended: 0, total: requiredMeetings };
-        }
-    });
-
-    allLabels = [];
-    allPercentages = [];
-    attendanceCounts = [];
-
-    Object.keys(attendanceCount).forEach(studentId => {
-        allLabels.push(`${studentId} (${allStudents[studentId]})`);
-        const percent = (attendanceCount[studentId].attended / requiredMeetings) * 100;
-        allPercentages.push(percent.toFixed(2));
-        attendanceCounts.push(attendanceCount[studentId].attended);
-    });
-
-    filteredLabels = [...allLabels];
-    filteredPercentages = [...allPercentages];
-    filteredAttendanceCounts = [...attendanceCounts];
-
-    updateChart();
-  }
-
-  function updateChart() {
-    let startIndex = (currentPage - 1) * itemsPerPage;
-    let endIndex = startIndex + itemsPerPage;
-
-    let pageLabels = filteredLabels.slice(startIndex, endIndex);
-    let pagePercentages = filteredPercentages.slice(startIndex, endIndex);
-    let pageAttendanceCounts = filteredAttendanceCounts.slice(startIndex, endIndex);
-
-    const ctx = document.getElementById('attendanceChart').getContext('2d');
-
-    if (window.attendanceChart instanceof Chart) {
-      window.attendanceChart.destroy();
-    }
-
-    window.attendanceChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: pageLabels,
-        datasets: [{
-          label: 'เปอร์เซ็นต์การเข้าร่วมประชุม (%)',
-          data: pagePercentages,
-          backgroundColor: 'rgba(75, 192, 192, 0.6)'
-        }, {
-          label: 'จำนวนครั้งที่เข้าประชุม',
-          data: pageAttendanceCounts,
-          backgroundColor: 'rgba(255, 99, 132, 0.6)'
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100
-          }
-        }
-      }
-    });
-
-    updatePagination();
-  }
-
-  function filterData() {
-    let searchValue = document.getElementById("searchBox").value.toLowerCase();
-    filteredLabels = allLabels.filter(label => label.toLowerCase().includes(searchValue));
-    let indexes = allLabels.map((label, index) => label.toLowerCase().includes(searchValue) ? index : -1).filter(index => index !== -1);
-    filteredPercentages = indexes.map(index => allPercentages[index]);
-    filteredAttendanceCounts = indexes.map(index => attendanceCounts[index]);
-
-    currentPage = 1;
-    updateChart();
-  }
-
-  function updatePagination() {
-    let totalPages = Math.ceil(filteredLabels.length / itemsPerPage);
-    document.getElementById("currentPage").innerText = `หน้า ${currentPage}`;
+<br>
+  <!--  Container -->
+  <div class="container">
+    <h2>📊 Dashboard % การเข้าประชุม</h2>
     
-    document.getElementById("prevPage").disabled = currentPage === 1;
-    document.getElementById("nextPage").disabled = currentPage === totalPages;
-  }
+    <div class="info-box">
+      <strong>ประชุมทั้งหมด:</strong> <span id="totalMeetings"></span> ครั้ง  
+      <br>
+      <strong>จำนวนผู้เข้าร่วมประชุม:</strong> <span id="totalParticipants"></span> คน  
+    </div>    
+    <div class="dropdown-container">
+      <label for="meetingSelector">📅 เลือกหัวข้อประชุม:</label>
+      <select id="meetingSelector" class="form-select custom-dropdown" onchange="processData(this.value)">
+      </select>
+    </div>
+    <div class="search-container">
+      <input type="text" id="searchBox" placeholder="ค้นหารหัสนักศึกษาหรือชื่อ..." onkeyup="filterData()">
+      <button class="search-reset" onclick="resetFilter()">รีเซ็ต</button>
+    </div>  
+    <div class="chart-container">
+      <canvas id="attendanceChart"></canvas>
+    </div>
+  <br>
+    <div class="pagination">
+      <button id="prevPage" onclick="changePage(-1)" disabled>⬅️ ก่อนหน้า</button>
+      <span id="currentPage">หน้า 1</span>
+      <button id="nextPage" onclick="changePage(1)">ถัดไป ➡️</button>
+    </div>
+  </div>
+  <!--  Footer -->
+  <footer>
+    <div class="footer-container">
+      <p></p>
+      <a href="https://www.facebook.com/YRUVolunteerClub/" target="_blank">
+        <img src="./images/facebook-icon.png" alt="Facebook"> Facebook
+      </a>
+      <a href="https://www.instagram.com/yru_volunteer/" target="_blank">
+        <img src="./images/instagram-icon.png" alt="Instagram"> Instagram
+      </a>
+      <a href="https://line.me/ti/g2/IrR67UOfyoD5DaSJmzdSMzGvtBl1vSe1cFr5RA" target="_blank">
+        <img src="./images/line-icon.png" alt="Line"> Line
+      </a>
+      <a>
+        <img src="./images/gmail-icon.png" alt="Email"> Volunteerclub@yru.ac.th
+      </a>
+      <a href="https://script.google.com/macros/s/AKfycbzbMbTrLvgzgv5LI41zVauuRm-vKYfi8SH9T12rWxCS7EUTSFKEcpZdyQ1CYqDxe8jamg/exec" target="_blank">
+        🌐 เช็ครหัสสมาชิก
+      </a>
+    </div>
+  </footer>
 
-  function changePage(step) {
-    currentPage += step;
-    updateChart();
-  }
-
-  function resetFilter() {
-    document.getElementById("searchBox").value = "";
-    filterData();
-  }
-</script>
-
+<script src="script.js"></script> <!-- 🔥 ย้ายมาไว้ตรงนี้ -->
 </body>
 </html>
